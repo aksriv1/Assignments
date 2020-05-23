@@ -1,0 +1,188 @@
+---
+title: "Machine Learning Project"
+author: "ARVIND SRIVASTAVA"
+date: "21/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+Executive Summary:
+This is a report on HAR (Human Activity Recognition), which is a key
+research area relating to personal activity through devices such as
+Fitbit, Apple watches etc.In this project, we use data from
+accelerometers on the bodies of 6 participants. We are required to
+create a machine learning algorithm to predict how they will do the
+exercises. We will also use our ML model to predict 20 test cases.
+```{r}
+library(knitr)
+library(dplyr)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(Rcpp)
+library(RColorBrewer)
+library(rattle)
+library(randomForest)
+set.seed(12345)
+```
+
+
+Read the files:
+
+
+```
+```{r}
+TrainData <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"),header=TRUE)
+
+dim(TrainData)
+
+
+```
+```{r}
+ValidData <- read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"),header=TRUE)
+
+
+dim(ValidData)
+
+
+```
+```{r}
+str(TrainData)
+```
+
+
+
+Data Pre-processing-Cleaning data:
+Eliminate the NA and empty entries and remove the unwanted columns(whereever they exceed 90% of the total column):
+```{r}
+EmptyCols <- which(colSums(is.na(TrainData) | TrainData == "")>0.9*dim(TrainData)[1])
+TrainDataClean <- TrainData[, -EmptyCols]
+TrainDataClean <- TrainDataClean[, -c(1:7)] # Remove  cols 1-7
+dim(TrainDataClean)
+
+```
+
+```{r}
+EmptyCols <- which(colSums(is.na(ValidData) |ValidData=="")>0.9*dim(ValidData)[1]) 
+ValidDataClean <- ValidData[,-EmptyCols]
+ValidDataClean <- ValidDataClean[,-1]
+dim(ValidDataClean)
+
+
+
+
+```
+These are the 20 cases on which we have to perform validation.
+Now we prepare the data for prediction by splitting the training data into 60% as train data and 40% as test data. This splitting will serve to test the model accuracy.
+
+
+```{r}
+set.seed(12345)
+inTrain <- createDataPartition(TrainDataClean$classe, p=0.6, list=FALSE)
+TrainData <- TrainDataClean[inTrain,] 
+TestData <- TrainDataClean[-inTrain,]
+dim(TrainData)
+
+```
+The test data TestDataClean remains the same, as it will be used
+later to test the predictive model on the 20 cases.
+
+In order to limit the effects of overfitting, and improve the
+efficicency of the models, we will use the cross-validation
+technique. Cross-validation is done for each model with K = 3.
+This is done below:
+```{r}
+fitControl <- trainControl(method='cv', number = 3)
+
+```
+
+
+
+
+ To ensure proper functioning of Decision trees and Random 
+ Forest Algorithm with Test data set, we need to coerce the data
+ into same type data.
+ First we will use Decision Tree Algorithm:
+
+Formulating and running ML algorithm:
+```{r}
+
+DT_Model <- train(classe ~ ., data=TrainData, method = "rpart", trControl = fitControl)
+fancyRpartPlot(DT_Model$finalModel) # plot the above
+
+
+
+```
+Now we validate decision tree model on test data.
+Predicting:
+```{r}
+DT_Predict <- predict(DT_Model, newdata = TestData)
+DT_cm <- confusionMatrix(factor(TestData$classe), DT_Predict)
+DT_cm
+
+```
+
+
+```
+Now use Random Forests Algorithm:
+```{r}
+RF_Model <- train(classe~ ., data=TrainData, method="rf", trControl=fitControl, verbose=FALSE)
+
+plot(RF_Model,main="RF Model Accuracy by number of predictors")
+
+
+```
+
+In this plot, we can notice that the model reaches the highest
+accuracy with two predictors. With more variables added to the
+model, the difference in the accuracy is not significant, but
+still lower. The fact that the accuracy is not much worse with
+a few more available predictors (as the top most portion of the
+graph shows) makes us believe that there may be some dependencies
+or correlation among them.
+
+
+Prediction Model and Confusion Matrix
+```{r}
+RF_Predict <- predict(RF_Model, newdata=TestData)
+RF_cm <- confusionMatrix(factor(TestData$classe), RF_Predict)
+RF_cm
+
+```
+By comparing the accuracy rate values of the two models, it is
+clear that the ‘Random Forest’ model is the better one in terms of
+accuracy(0.99 vs 0.49 for Decision Trees) So we will use it to
+predict the values of 'classe' for the validation data.
+
+In fact, the very high overall accuracy of 99.40% makes it futile to go in for the General Booster Model (gbm). 
+So, we give below our predictions on the 20 test cases pertaining to the activities of lifting barbel weights in 5 different ways: A, B, C, D and E.
+```{r}
+Prediction_Test <- predict(RF_Model,newdata=ValidDataClean)
+Prediction_Test
+
+```
+
+Limitations of the Model:
+As mentioned above, there are some correlated variables.Therefore,
+we could choose not to consider some of these variables.I fact, we
+could use the Principal Components Analysis (PCA) to combine some
+of these correlated variables to have a simpler model. However, we
+have not done so in the present case.
+
+Courtesy- Groupware@LES
+
+
+
+
+
+
+
+
+
+
+
+
