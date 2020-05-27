@@ -1,0 +1,29 @@
+---
+title: "Major Indian Parks in Map"
+author: "ARVIND SRIVASTAVA"
+date: "25/05/2020"
+output: html_document
+---
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+library(leaflet)
+my_map <- leaflet() %>%
+addTiles() %>%
+addMarkers(lat=12.973826, lng=77.590591, popup="Cubbon Park,Bangalore, Karnataka") %>%
+addMarkers(lat=10.079732, lng=77.061386, popup="Kolukkumalai Tea Estate, Munnar, Kerala") %>%
+addMarkers(lat=17.039022, lng=78.237900, popup="Kohinoor Park, Shadnagar, Telangana") %>%
+addMarkers(lat=22.575148, lng=88.406242, popup="Pubachal Central Park, Salt Lake City, Kolkata, West Bengal") %>%
+addMarkers(lat=21.206718, lng=72.803940, popup="Usmani Park, Adajan, Surat, Gujarat")
+my_map
+```
+
+
+
+
